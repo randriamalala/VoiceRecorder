@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">VoiceRecorderMCSProject</string>
+    <string name="recordText">RECORD</string>
+    <string name="stopText">STOP</string>
+    <string name="btnrecord">btnRecord</string>
+    <string name="playText">PLAY</string>
+    <string name="btnPlay" />
+    <string name="saveText">SAVE</string>
+</resources>
