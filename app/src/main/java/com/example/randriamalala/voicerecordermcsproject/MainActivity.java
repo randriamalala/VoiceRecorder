@@ -1,7 +1,9 @@
 package com.example.randriamalala.voicerecordermcsproject;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.icu.lang.UProperty;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
@@ -91,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
                                 state = State.RECORD;
                                 updateDisplay();
                                 Toast.makeText(MainActivity.this, "Parlez...", Toast.LENGTH_SHORT).show();
+                                //prepareRecordVar(); // MEDIARECORDER AT STATE DATASOURCECONFIRGURED
                                 try {
                                     mediaRecorder.prepare();
                                     mediaRecorder.start();
@@ -105,6 +108,7 @@ public class MainActivity extends AppCompatActivity {
                                 state = State.RECORD;
                                 updateDisplay();
                                 Toast.makeText(MainActivity.this, "Parlez...", Toast.LENGTH_SHORT).show();
+                                prepareRecordVar();// MEDIARECORDER AT STATE DATASOURCECONFIRGURED
                                 try {
                                     mediaRecorder.prepare();
                                     mediaRecorder.start();
@@ -127,8 +131,9 @@ public class MainActivity extends AppCompatActivity {
                             case RECORD:
                                 state = State.RECPLAYSAVE;
                                 updateDisplay();
-                                mediaRecorder.stop();
+                                //mediaRecorder.stop();
                                 mediaRecorder.reset();
+                                preparePlayerVar();
                                 break;
                             case RECPLAYSAVE:
                                 // INTERDIT
@@ -188,6 +193,12 @@ public class MainActivity extends AppCompatActivity {
                             updateDisplay();
                             if (mediaPlayer != null) {
                                 mediaPlayer.stop();
+                                System.out.println("etat player = " + mediaPlayer.toString());
+                                try {
+                                    mediaPlayer.prepare();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                             }
                             break;
                     }
@@ -199,9 +210,28 @@ public class MainActivity extends AppCompatActivity {
         btnSave.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                state = State.INIT;
-                updateDisplay();
-                mediaPlayer.reset();
+                switch (state) {
+                    case INIT:
+                        // INTERDIT
+                        break;
+                    case READY:
+                        // INTERDIT
+                        break;
+                    case RECORD:
+                        // INTERDIT
+                        break;
+                    case RECPLAYSAVE:
+                        state = State.INIT;
+                        updateDisplay();
+                        mediaPlayer.reset();
+                        commandPicker.setSelection(commands.length);
+
+                        break;
+                    case PLAY:
+                        // INTERDIT
+                        break;
+                }
+
             }
         });
     }
@@ -209,15 +239,17 @@ public class MainActivity extends AppCompatActivity {
     // initialize variables, state of  the system and display
     private void init() {
         initVoiceRecorder();
-        initSpinnerMenu();
         state = State.INIT;
         updateDisplay();
+        initSpinnerMenu();
+
 
     }
 
     // initialize variables
     private void initVoiceRecorder() {
         btnRecStp = (ToggleButton) findViewById(R.id.btnRec);
+
         btnPlayStp = (ToggleButton) findViewById(R.id.btnPlay);
         btnSave = (Button) findViewById(R.id.btnSave);
         commandPicker = (Spinner) findViewById(R.id.spinner);
@@ -242,16 +274,12 @@ public class MainActivity extends AppCompatActivity {
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 switch (state) {
                     case INIT:
-                        if (position>= 0 && position < nbrCmd){// if selected item is not "Choisir la commande à enregistrer"
+                        if (position>= 0 && position < nbrCmd){// if selected item is not "
                             state = State.READY;
                             updateDisplay();
+                            // set up output file path, we'll add the file name later
+                            outputFile = Environment.getExternalStorageDirectory().getAbsolutePath() + "/";
                             setOutputFileName(commandPicker.getSelectedItem().toString());
-                            try {
-                                mediaPlayer.setDataSource(outputFile);
-                                mediaPlayer.prepare();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
                             prepareRecordVar();
                             Toast.makeText(MainActivity.this, "Vous pouvez enregistrer " +
                                     commandPicker.getSelectedItem().toString()+ ", ce sera stocké dans "+outputFile, Toast.LENGTH_LONG).show();
@@ -287,6 +315,17 @@ public class MainActivity extends AppCompatActivity {
         mediaRecorder.setOutputFile(outputFile);
     }
 
+    // prepare media player
+    private void preparePlayerVar() {
+        try {
+            System.out.println("ici output = " + outputFile);
+            mediaPlayer.reset();
+            mediaPlayer.setDataSource(outputFile);
+            mediaPlayer.prepare();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     // update dispay of the application's elements
     private void updateDisplay() {
         switch (state) {
@@ -323,15 +362,17 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // file naming convention : filename(i).3gp
+    // file naming convention : command_name(i).3gp
     private void setOutputFileName(String newName) {
-        // replace white space by _
-        String temp = outputFile + newName.replaceAll("\\s+", "_") + ".3gp";
-        File f = new File(temp);
-        int i = 1;
-        while (f.exists()) {
-
-        }
+            // replace white space by _
+            String temp = outputFile + newName.replaceAll("\\s+", "_");
+            File f = new File(temp + ".3gp");
+            int i;
+            while (f.exists()) {
+                temp += "1";
+                f = new File(temp + ".3gp");
+            }
+            outputFile = temp + ".3gp";
     }
 
     // checks if necessary permissions are granted to the application
